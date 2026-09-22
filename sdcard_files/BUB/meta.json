@@ -1,0 +1,7 @@
+{
+  "title": "BUB",
+  "description": "Portage sur Gamebuino AKA du jeu BUB de Owen Swerkstrom (penduin / smogheap). Puzzle a bulles : aspire les bulles, pose-les sous toi pour grimper, ouvre les portes avec la cle, atteins le drapeau. 111 niveaux. Jeu original et niveaux (c) Owen Swerkstrom, GNU GPL v3 (https://gitlab.com/smogheap/bub).",
+  "author": "Jicehel (portage) - original: Owen Swerkstrom",
+  "version": "1.0",
+  "date": "2026-09-02"
+}

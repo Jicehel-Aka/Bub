@@ -1,0 +1,13 @@
+The "gamebuino" library bundled in this directory is NOT part of the BUB port
+and is NOT covered by the project's GPL-3.0-only license.
+
+Per the license headers in its own source files, this library is:
+
+    Copyright (c) Gamebuino
+    Licensed under the GNU Lesser General Public License (LGPL),
+    version 2.1 or (at your option) any later version.
+
+See the per-file headers in components/gamebuino/ for the authoritative notice,
+and <http://www.gnu.org/licenses/> for the full LGPL text. The LGPL is
+compatible with the project's GPLv3: the combined, distributed work is conveyed
+under the GNU GPL v3, while this library individually remains under the LGPL.
