@@ -41,7 +41,7 @@ Le `Makefile` détecte SDL2 via `pkg-config` (ou `sdl2-config`).
 - La fenêtre est en 320×240 logiques, agrandie ×3 (960×720), redimensionnable.
 - Rendu **vectoriel** (primitives SDL) et police 8×8 — pas d'assets externes.
 - La configuration (langue, son, niveau atteint) est sauvegardée dans
-  `pc/bub_save.dat` (au lieu de `/sdcard/CFG.DAT` sur la console).
+  `pc/bub_save.dat` (au lieu de `/sdcard/BUB/CFG.DAT` sur la console).
 - Aucune modification du code du jeu : `-DBUB_PC` ne change que le chemin de
   sauvegarde (`Config.cpp`) et le « retour loader » (`Loader.cpp`, qui quitte).
 

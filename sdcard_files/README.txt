@@ -7,12 +7,12 @@ Copier le dossier BUB/ a la racine de la carte SD :
     firmware.bin     <- a generer : build ESP-IDF (idf.py build) puis copier
                         build/BUB.bin ici sous le nom firmware.bin
     meta.json        <- titre / description / auteur / version (pour le loader)
-    screen.bmp       <- vignette 160x120 (BGR565) affichee par le loader
+    screen.bmp       <- vignette 160x120, BMP 16 bits RGB565 (affichee par le Launcher)
     lang/fr.json ... <- textes du jeu (5 langues) au format AKA
     Sons/            <- bruitages optionnels (voir Sons/README.txt)
-    (CFG.DAT sera cree automatiquement par le jeu pour la sauvegarde)
+    CFG.DAT          <- cree par le jeu dans ce dossier (langue, son, niveau)
 
-Les textes de l'interface commune du loader restent dans SD:/AKA/lang/*.json
+Les textes de l'interface commune du Launcher restent dans SD:/AKA/lang/*.json
 (partages par tous les jeux) : ne pas les dupliquer ici.
 
 NB : le firmware embarque deja ses textes (i18n compile). Les lang/*.json sont

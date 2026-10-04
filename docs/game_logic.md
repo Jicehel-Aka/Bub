@@ -29,5 +29,5 @@ Puzzle-plateforme sur grille 8x8. Le joueur (l'ork) subit la gravite.
 - **Drapeau (4)** : atteint avec 0 bulle restante => niveau reussi.
 
 Boucle : niveau reussi -> A (suivant) / B (rejouer). Dernier niveau -> ecran final.
-En jeu : B recommence le niveau, MENU revient au menu, RUN+MENU (500 ms) au loader.
-La progression (niveau atteint) est sauvegardee dans /sdcard/CFG.DAT.
+En jeu : B recommence le niveau, MENU revient au menu, HOME(RUN)+MENU (500 ms) au Launcher.
+La progression (niveau atteint) est sauvegardee dans /sdcard/BUB/CFG.DAT.
