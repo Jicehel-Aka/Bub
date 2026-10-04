@@ -82,3 +82,12 @@ Details et resume des modifications : `CREDITS.md`.
 
 La bibliotheque `components/gamebuino` (c) Gamebuino est sous **LGPL**
 (compatible GPLv3) ; voir `components/gamebuino/LICENSE.txt`.
+
+## Releases (GitHub Actions)
+
+`.github/workflows/release.yml` compile a chaque mise a jour de `main` :
+firmware AKA (ESP-IDF 5.5.1, `BUB.bin` -> `firmware.bin`, paquet `bub-aka-sdcard-*.zip` =
+dossier `BUB/` pret a copier sur la SD), version PC Linux et Windows (SDL2). Si tout compile,
+une Release est publiee (premiere version v1.0.0, puis +1 sur la version mineure).
+Le bootloader et la table de partitions ne sont pas publies : seuls `firmware.bin` et le
+dossier SD le sont. Sur les pull requests, les compilations tournent sans release.
