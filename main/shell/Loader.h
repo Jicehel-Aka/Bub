@@ -7,7 +7,7 @@
 
 namespace loader
 {
-    //! Bascule le boot sur la partition "factory" (le loader) si presente,
-    //! puis redemarre. Ne revient jamais.
+    //! Bascule le boot sur la partition du Launcher (app1/OTA_1, ou factory dans
+    //! l'ancienne organisation) puis redemarre. Ne revient jamais.
     [[noreturn]] void returnToLoader();
 }

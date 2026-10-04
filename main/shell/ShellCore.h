@@ -29,7 +29,7 @@ namespace shell
     // Applique le volume master selon g_cfg.sound.
     void applyVolume();
 
-    // Debut de frame : lit les entrees et gere RUN+MENU 500 ms -> loader.
+    // Debut de frame : lit les entrees et gere HOME(RUN)+MENU 500 ms -> Launcher.
     // Ne revient pas si le combo loader est declenche.
     void frameBegin();
 

@@ -1,6 +1,11 @@
 /**
  * @file Config.cpp
- * @brief Lecture/ecriture de /sdcard/CFG.DAT.
+ * @brief Lecture/ecriture de /sdcard/BUB/CFG.DAT (dossier de l'application).
+ *
+ * Convention AKA : chaque application garde ses fichiers dans son propre
+ * dossier a la racine de la carte SD (le meme que celui lu par le Launcher).
+ * Ancien emplacement /sdcard/CFG.DAT : lu s'il n'y a pas encore de fichier
+ * dans le dossier de l'application, jamais ecrit.
  */
 
 #include "Config.h"
@@ -8,14 +13,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef BUB_PC
+#include <sys/stat.h>
+#endif
+
 #include "gb_ll_sdcard.h"   // gb_ll_sd_is_mounted()
 
 namespace
 {
 #ifdef BUB_PC
-    const char* CFG_PATH = "bub_save.dat";   // version PC : fichier local
+    const char* CFG_PATH     = "bub_save.dat";   // version PC : fichier local
+    const char* CFG_PATH_OLD = nullptr;
 #else
-    const char* CFG_PATH = "/sdcard/CFG.DAT";
+    const char* APP_DIR      = "/sdcard/BUB";
+    const char* CFG_PATH     = "/sdcard/BUB/CFG.DAT";
+    const char* CFG_PATH_OLD = "/sdcard/CFG.DAT";   // ancienne version (lecture seule)
 #endif
 
     struct CfgFile
@@ -35,6 +47,7 @@ namespace config
         if (!gb_ll_sd_is_mounted()) return;
 
         FILE* f = fopen(CFG_PATH, "rb");
+        if (!f && CFG_PATH_OLD) f = fopen(CFG_PATH_OLD, "rb");
         if (!f) return;
 
         CfgFile c{};
@@ -51,6 +64,10 @@ namespace config
     bool save(const Config& in)
     {
         if (!gb_ll_sd_is_mounted()) return false;
+
+#ifndef BUB_PC
+        mkdir(APP_DIR, 0777);   // jeu flashe sans passer par le Launcher : dossier absent
+#endif
 
         FILE* f = fopen(CFG_PATH, "wb");
         if (!f) return false;

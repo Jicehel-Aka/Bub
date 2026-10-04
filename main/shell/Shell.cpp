@@ -48,34 +48,44 @@ namespace shell
         text(x, y, s);
     }
 
-    // --- RUN+MENU maintenu 500 ms : declenchement au relachement ---
-    static bool loaderComboReleased()
+    // --- HOME (RUN) + MENU maintenus 500 ms : retour immediat au Launcher ---
+    static bool loaderComboHeld()
     {
-        static uint32_t t0    = 0;
-        static bool     armed = false;
+        static uint32_t t0 = 0;
 
-        uint16_t s   = g_core.buttons.state();
+        uint16_t s    = g_core.buttons.state();
         bool     both = (s & gb_buttons::KEY_RUN) && (s & gb_buttons::KEY_MENU);
-        uint32_t now = g_core.get_millis();
 
-        if (both)
+        if (!both)
         {
-            if (t0 == 0) t0 = now;
-            if (now - t0 >= 500) armed = true;
-            return false;                 // on attend le relachement
+            t0 = 0;
+            return false;
         }
 
-        bool fire = armed;                // relachement
-        t0    = 0;
-        armed = false;
-        return fire;
+        uint32_t now = g_core.get_millis();
+        if (t0 == 0) t0 = now;
+        return (now - t0) >= 500;
+    }
+
+    static void goToLauncher()
+    {
+        // Attend le relachement des deux touches (3 s max) : sinon le Launcher
+        // demarre avec MENU encore enfonce et ouvre ses options.
+        const uint16_t both = gb_buttons::KEY_RUN | gb_buttons::KEY_MENU;
+        const uint32_t t0   = g_core.get_millis();
+        while ((g_core.buttons.state() & both) && (g_core.get_millis() - t0) < 3000)
+        {
+            g_core.delay_ms(10);
+            g_core.pool();
+        }
+        loader::returnToLoader();         // ne revient pas
     }
 
     void frameBegin()
     {
         g_core.pool();
-        if (loaderComboReleased())
-            loader::returnToLoader();     // ne revient pas
+        if (loaderComboHeld())
+            goToLauncher();
     }
 
     void frameEnd()
@@ -85,8 +95,8 @@ namespace shell
     }
 
     // --- Boucle de jeu ---
-    // MENU (appui court sans RUN) revient au menu. RUN+MENU 500 ms -> loader.
-    // Le niveau atteint est sauvegarde dans la config (reprise via /sdcard/CFG.DAT).
+    // MENU (appui court sans RUN) revient au menu. HOME(RUN)+MENU 500 ms -> Launcher.
+    // Le niveau atteint est sauvegarde dans la config (reprise via /sdcard/BUB/CFG.DAT).
     static void gameLoop()
     {
         Game game;

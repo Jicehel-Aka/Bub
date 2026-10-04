@@ -3,7 +3,7 @@
  * @brief Coquille BUB : initialise le materiel puis enchaine titre / menu / jeu.
  *
  * Gere ecran-titre, menu, multilingue (5 langues), option son, sauvegarde SD
- * et retour au loader (RUN+MENU 500 ms, ou entree QUITTER du menu).
+ * et retour au Launcher (HOME+MENU 500 ms, ou entree QUITTER du menu).
  */
 
 #pragma once

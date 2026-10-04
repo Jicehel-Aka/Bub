@@ -1,6 +1,6 @@
 /**
  * @file Config.h
- * @brief Configuration persistante (langue, son, niveau) sur SD : /sdcard/CFG.DAT.
+ * @brief Configuration persistante (langue, son, niveau) sur SD : /sdcard/BUB/CFG.DAT.
  *
  * Nom 8.3 impose (CONFIG_FATFS_LFN_NONE). SD absente => valeurs par defaut,
  * sauvegarde ignoree.
