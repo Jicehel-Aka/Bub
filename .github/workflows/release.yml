@@ -1,0 +1,191 @@
+name: Build and release
+
+# UN SEUL workflow. A chaque mise a jour de la branche principale, il compile :
+#   - AKA     : firmware ESP-IDF 5.5.1, empaquete en dossier carte SD pret a copier (BUB/)
+#   - Linux   : version SDL2
+#   - Windows : version SDL2 (MSYS2 / MinGW-w64, SDL2.dll fournie)
+# puis publie une Release GitHub en incrementant la version MINEURE (v1.0.0 -> v1.1.0).
+# Rien n'est publie si une des compilations echoue.
+#
+# Pull request : les compilations tournent, sans release. Declenchement manuel : compile et publie.
+#
+# PREREQUIS : la bibliotheque `gamebuino` doit etre dans components/gamebuino (elle y est deja dans
+# ce depot).
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore: ['**.md', 'LICENSE', '.gitignore']
+  pull_request:
+    paths-ignore: ['**.md', 'LICENSE', '.gitignore']
+  workflow_dispatch:
+
+permissions:
+  contents: write # creer la Release et y attacher les fichiers
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # jamais d'annulation d'une release en cours
+
+jobs:
+  # ---------------------------------------------------------------- AKA
+  aka:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove stale build cache
+        run: rm -rf build
+
+      - name: Check gamebuino component
+        run: |
+          if [ ! -d components/gamebuino ]; then
+            echo "::error::components/gamebuino est absent : copiez la bibliotheque gamebuino dans components/ (voir README)"
+            exit 1
+          fi
+
+      - name: Build with ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.1
+          target: esp32s3
+          path: '.'
+
+      # firmware.bin = le nom attendu par le Launcher AKA. Le bootloader et la table de partitions ne
+      # sont volontairement PAS publies : les flasher ecraserait le Launcher de la console.
+      # sdcard_files/BUB/ : meta.json, screen.bmp, Picture.png, lang/, Sons/ -> dossier BUB a la
+      # racine de la carte SD. Les licences sont copiees a cote (GPL v3 : licence + credits).
+      - name: Package
+        run: |
+          test -f build/BUB.bin
+          mkdir -p out/BUB
+          cp -r sdcard_files/BUB/. out/BUB/
+          cp build/BUB.bin out/BUB/firmware.bin
+          cp build/BUB.bin firmware.bin
+          cp LICENSE CREDITS.md out/BUB/
+          (cd out && zip -r ../bub-aka-sdcard.zip BUB)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aka
+          path: |
+            firmware.bin
+            bub-aka-sdcard.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---------------------------------------------------------------- PC (Windows + Linux)
+  pc:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x64
+          - os: windows-latest
+            name: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Linux : compilation, paquet ---
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev
+          make -C pc
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p package
+          cp pc/bub package/
+          cp LICENSE CREDITS.md package/
+          cp pc/README.md package/LISEZMOI.md
+          (cd package && zip -r ../bub-pc-${{ matrix.name }}.zip .)
+
+      # --- Windows : MinGW-w64 via MSYS2. Le runtime GCC est lie statiquement ; SDL2.dll (et toute
+      # autre DLL mingw64 dont depend l'executable) est copiee a cote. ---
+      - name: Set up MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >-
+            make zip
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf mingw-w64-x86_64-SDL2
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          make -C pc CXXFLAGS="-std=gnu++17 -O2 -Wall -Wextra -DBUB_PC -static-libgcc -static-libstdc++"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir -p package
+          cp pc/bub.exe package/
+          for dll in $(ldd pc/bub.exe | awk '/mingw64/ {print $3}'); do cp "$dll" package/; done
+          cp LICENSE CREDITS.md package/
+          cp pc/README.md package/LISEZMOI.md
+          (cd package && zip -r ../bub-pc-${{ matrix.name }}.zip .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc-${{ matrix.name }}
+          path: bub-pc-${{ matrix.name }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---------------------------------------------------------------- Release
+  release:
+    if: github.event_name != 'pull_request'
+    needs: [aka, pc]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tous les tags, pour calculer la version suivante
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # Premiere release : v1.0.0 ; ensuite on incremente la version MINEURE.
+      - name: Next minor version
+        id: version
+        run: |
+          last=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          if [ -z "$last" ]; then
+            echo "tag=v1.0.0" >> "$GITHUB_OUTPUT"
+          else
+            IFS=. read -r major minor _ <<< "${last#v}"
+            echo "tag=v${major}.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
+          fi
+
+      # firmware.bin garde son nom (le Launcher l'attend tel quel) ; les zips recoivent la version.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          cd artifacts
+          for f in bub-*.zip; do mv "$f" "${f%.zip}-${TAG}.zip"; done
+          ls -l
+          cat > ../notes.md <<'NOTES'
+          BUB pour Gamebuino AKA et PC (SDL2) - portage de *BUB* d'Owen Swerkstrom (penduin / smogheap), licence GNU GPL v3.
+
+          - `bub-aka-sdcard-*.zip` : dossier `BUB` a copier a la racine de la carte SD de la AKA (contient `firmware.bin`).
+          - `firmware.bin` : le firmware seul.
+          - `bub-pc-linux-x64-*.zip` / `bub-pc-windows-x64-*.zip` : version PC (Linux : necessite `libsdl2-2.0-0`).
+
+          Sur la AKA, [HOME]+[MENU] maintenus 500 ms ramenent au Launcher.
+          Le jeu et ses niveaux gardent leur licence d'origine : voir `CREDITS.md`, joint a chaque archive.
+          NOTES
+          gh release create "$TAG" firmware.bin bub-*.zip \
+            --target "$GITHUB_SHA" --title "BUB $TAG" --notes-file ../notes.md --generate-notes
